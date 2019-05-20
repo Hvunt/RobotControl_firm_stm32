@@ -192,9 +192,9 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-	if (hadc->Instance == hadc1.Instance) {
-		adc_irq_flag = 1;
-	}
+//	if (hadc->Instance == hadc1.Instance) {
+//		adc_irq_flag = 1;
+//	}
 }
 /* USER CODE END 4 */
 

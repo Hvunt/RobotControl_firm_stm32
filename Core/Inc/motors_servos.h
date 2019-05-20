@@ -20,7 +20,7 @@ typedef struct {
 	uint8_t dc_motors_ports;
 	//optical / magnet (??) or just rotation counter
 	uint8_t encoder_types;
-	// First port = first bit, Second port = second bit, etc.
+	// First port = 1, second port = 2 etc.
 	uint16_t servo_ports;
 	//Battery voltage for battery charge monitor
 	uint8_t battery_v;
