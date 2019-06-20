@@ -11,6 +11,7 @@
 #include "stm32g0xx_hal.h"
 #include "cmsis_os.h"
 #include "tim.h"
+#include <math.h>
 
 #include "encoder.h"
 
@@ -79,13 +80,26 @@ typedef struct {
 /*
  * Commands definitions
  */
+enum
+{
+	COMM_INIT = 0xF0,
+	COMM_ERROR = 0xD0,
+	COMM_MOVE = 0xC0,
+	COMM_SET_SERVOS_POS,
+	COMM_SET_SETTINGS,
+	COMM_GET_STATUS,
+	COMM_GET_SPEED,
+	COMM_GET_SERVOS_POS,
+	COMM_GET_SETTINGS,
+	COMM_GET_SENSORS
+};
 //SET
-#define COMM_MOVE					0x50
-#define COMM_SET_SERVOS_POS			0x80
-
-//GET
-#define COMM_GET_SPEED				0x70
-#define COMM_GET_SERVOS_POS 		0xB0
+//#define COMM_MOVE					0x50
+//#define COMM_SET_SERVOS_POS			0x80
+//
+////GET
+//#define COMM_GET_SPEED				0x70
+//#define COMM_GET_SERVOS_POS 		0xB0
 
 enum {
 	MOVE_FORWARD = 0x02,

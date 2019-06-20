@@ -7,14 +7,20 @@
 
 #include "motors_servos.h"
 
-static uint16_t angle_to_time(uint8_t angle);
-
 static void _m_move_d(uint8_t port, uint8_t direction);
 static void _m_move_r(uint8_t port, uint8_t direction);
 static void _m_move_s(uint8_t port);
 static void _m_move_smooth(void);
 
+static uint16_t angle_to_time(uint8_t angle);
+static uint32_t angle_to_length(uint16_t angle);
+static uint32_t length_to_ticks(uint32_t length);
+
+#define PI 3.14159265
+
 driver_t *settings;
+
+extern volatile uint32_t encoder_irq_counter;
 
 void M_init(driver_t *driver) {
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
@@ -37,21 +43,85 @@ void S_init(driver_t *driver) {
 	HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_2);
 }
 
-void M_move(uint8_t direction, uint32_t distance) {
+void M_move(uint8_t direction, uint32_t data) {
+	uint32_t temp;
+
+	htim1.Instance->CCR1 = 1000;
+	htim1.Instance->CCR2 = 1000;
+	htim1.Instance->CCR3 = 1000;
+	htim1.Instance->CCR4 = 1000;
+
+	encoder_irq_counter = 0;
 
 	switch (direction) {
 	case MOVE_FORWARD:
 		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
 		_m_move_d(settings->dc_motors_ports, SET);
-		_m_move_smooth();
+//		osDelay(500);
+//		data *= 10;
+		temp = length_to_ticks(data * 10);
+		while (encoder_irq_counter <= temp)
+			;
+//		_m_move_smooth();
 		break;
 	case MOVE_REVERSE:
 		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
 		_m_move_d(settings->dc_motors_ports, RESET);
-		_m_move_smooth();
+//		osDelay(500);
+		temp = length_to_ticks(data * 10);
+		while (encoder_irq_counter <= temp)
+			;
+//		_m_move_smooth();
 		break;
+	case MOVE_RIGHT:
+		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
+		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
+		_m_move_r(settings->dc_motors_ports, RESET);
+		temp = angle_to_length(data);
+		temp = length_to_ticks(temp);
+
+		while (encoder_irq_counter <= temp)
+			;
+//		switch (distance) {
+//		case 45:
+//			osDelay(150);
+//			break;
+//		case 90:
+//			osDelay(300);
+//			break;
+//		case 135:
+//			osDelay(450);
+//			break;
+//		case 180:
+//			osDelay(600);
+//			break;
+//		}
+		break;
+	case MOVE_LEFT:
+		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
+		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
+		_m_move_r(settings->dc_motors_ports, SET);
+		temp = angle_to_length(data);
+		temp = length_to_ticks(temp);
+		while (encoder_irq_counter <= temp)
+			;
+//		switch (data) {
+//		case 45:
+//			osDelay(150);
+//			break;
+//		case 90:
+//			osDelay(300);
+//			break;
+//		case 135:
+//			osDelay(450);
+//			break;
+//		case 180:
+//			osDelay(600);
+//			break;
+//		}
+//		break;
 	case MOVE_STOP:
 	default:
 		_m_move_s(settings->dc_motors_ports);
@@ -60,6 +130,8 @@ void M_move(uint8_t direction, uint32_t distance) {
 		break;
 	}
 
+	_m_move_s(settings->dc_motors_ports);
+//	M_move(MOVE_STOP,0);
 }
 
 void M_rotate(uint8_t direction, uint16_t angle) {
@@ -145,8 +217,8 @@ static void _m_move_smooth(void) {
 		htim1.Instance->CCR2 = speed_value;
 		htim1.Instance->CCR3 = speed_value;
 		htim1.Instance->CCR4 = speed_value;
-		speed_value += 10;
-		osDelay((1000 - speed_value) / 200 );
+		speed_value += 50;
+		osDelay(1000 - speed_value);
 	}
 }
 
@@ -210,4 +282,12 @@ void S_setPosition(uint8_t servos_port, uint8_t angle) {
 
 static uint16_t angle_to_time(uint8_t angle) {
 	return 100 * angle / 18 + 1000;
+}
+
+static uint32_t angle_to_length(uint16_t angle) {
+	return round((PI * 130 * angle) / 180);
+}
+
+static uint32_t length_to_ticks(uint32_t length) {
+	return round(length / 103.5);
 }
