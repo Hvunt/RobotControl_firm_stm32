@@ -21,7 +21,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32g0xx_it.h"
-#include "cmsis_os.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -58,10 +57,6 @@
 
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_adc1;
-extern DMA_HandleTypeDef hdma_i2c1_rx;
-extern I2C_HandleTypeDef hi2c1;
-extern TIM_HandleTypeDef htim14;
-
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -95,6 +90,32 @@ void HardFault_Handler(void)
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
+}
+
+/**
+  * @brief This function handles System service call via SWI instruction.
+  */
+void SVC_Handler(void)
+{
+  /* USER CODE BEGIN SVC_IRQn 0 */
+
+  /* USER CODE END SVC_IRQn 0 */
+  /* USER CODE BEGIN SVC_IRQn 1 */
+
+  /* USER CODE END SVC_IRQn 1 */
+}
+
+/**
+  * @brief This function handles Pendable request for system service.
+  */
+void PendSV_Handler(void)
+{
+  /* USER CODE BEGIN PendSV_IRQn 0 */
+
+  /* USER CODE END PendSV_IRQn 0 */
+  /* USER CODE BEGIN PendSV_IRQn 1 */
+
+  /* USER CODE END PendSV_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -133,52 +154,78 @@ void DMA1_Channel1_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 channel 2 and channel 3 interrupts.
-  */
-void DMA1_Channel2_3_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel2_3_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_i2c1_rx);
-  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel2_3_IRQn 1 */
-}
-
-/**
-  * @brief This function handles TIM14 global interrupt.
-  */
-void TIM14_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM14_IRQn 0 */
-
-  /* USER CODE END TIM14_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim14);
-  /* USER CODE BEGIN TIM14_IRQn 1 */
-
-  /* USER CODE END TIM14_IRQn 1 */
-}
-
-/**
   * @brief This function handles I2C1 event global interrupt / I2C1 wake-up interrupt through EXTI line 23.
   */
 void I2C1_IRQHandler(void)
 {
   /* USER CODE BEGIN I2C1_IRQn 0 */
+	/* Check ADDR flag value in ISR register */
+		if (LL_I2C_IsActiveFlag_ADDR(I2C1)) {
+			/* Verify the Address Match with the OWN Slave address */
+			if (LL_I2C_GetAddressMatchCode(I2C1) == 56) {
+				/* Verify the transfer direction, a read direction, Slave enters transmitter mode */
+				if (LL_I2C_GetTransferDirection(I2C1) == LL_I2C_DIRECTION_READ) {
+					/* Clear ADDR flag value in ISR register */
+					LL_I2C_ClearFlag_ADDR(I2C1);
 
+					/* Enable Transmit Interrupt */
+					LL_I2C_EnableIT_TX(I2C1);
+				} else {
+					/* Clear ADDR flag value in ISR register */
+					LL_I2C_ClearFlag_ADDR(I2C1);
+
+					/* Enable Receiev Interrupt */
+					LL_I2C_EnableIT_RX(I2C1);
+				}
+			} else {
+				/* Clear ADDR flag value in ISR register */
+				LL_I2C_ClearFlag_ADDR(I2C1);
+
+				/* Call Error function */
+//				Error_Callback();
+			}
+		}
+		/* Check NACK flag value in ISR register */
+		else if (LL_I2C_IsActiveFlag_NACK(I2C1)) {
+			/* End of Transfer */
+			LL_I2C_ClearFlag_NACK(I2C1);
+		}
+		/* Check TXIS flag value in ISR register */
+		else if (LL_I2C_IsActiveFlag_TXIS(I2C1)) {
+			/* Call function Slave Ready to Transmit Callback */
+			LL_I2C_ClearFlag_TXE(I2C1);
+			Slave_Ready_To_Transmit_Callback();
+		}
+		/* Check STOP flag value in ISR register */
+		else if (LL_I2C_IsActiveFlag_STOP(I2C1)) {
+			/* Clear STOP flag value in ISR register */
+			LL_I2C_ClearFlag_STOP(I2C1);
+
+			/* Check TXE flag value in ISR register */
+			if (!LL_I2C_IsActiveFlag_TXE(I2C1)) {
+				/* Flush the TXDR register */
+				LL_I2C_ClearFlag_TXE(I2C1);
+			}
+			Slave_Complete_Callback();
+		} else if (LL_I2C_IsActiveFlag_RXNE(I2C1)) {
+			Slave_Reception_Callback();
+		}
   /* USER CODE END I2C1_IRQn 0 */
-  if (hi2c1.Instance->ISR & (I2C_FLAG_BERR | I2C_FLAG_ARLO | I2C_FLAG_OVR)) {
-    HAL_I2C_ER_IRQHandler(&hi2c1);
-  } else {
-    HAL_I2C_EV_IRQHandler(&hi2c1);
-  }
+  
   /* USER CODE BEGIN I2C1_IRQn 1 */
 
   /* USER CODE END I2C1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
+void SysTick_Handler(void) {
+	/* USER CODE BEGIN SysTick_IRQn 0 */
 
+	/* USER CODE END SysTick_IRQn 0 */
+	HAL_IncTick();
+	/* USER CODE BEGIN SysTick_IRQn 1 */
+
+	/* USER CODE END SysTick_IRQn 1 */
+}
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

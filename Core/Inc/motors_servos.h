@@ -9,7 +9,7 @@
 #define INC_MOTORS_SERVOS_H_
 
 #include "stm32g0xx_hal.h"
-#include "cmsis_os.h"
+//#include "cmsis_os.h"
 #include "tim.h"
 #include <math.h>
 

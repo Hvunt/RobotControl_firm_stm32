@@ -20,7 +20,7 @@ static uint32_t length_to_ticks(uint32_t length);
 
 driver_t *settings;
 
-extern volatile uint32_t encoder_irq_counter;
+volatile uint32_t encoder_irq_counter;
 
 void M_init(driver_t *driver) {
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
@@ -290,4 +290,11 @@ static uint32_t angle_to_length(uint16_t angle) {
 
 static uint32_t length_to_ticks(uint32_t length) {
 	return round(length / 103.5);
+}
+
+
+void HAL_GPIO_EXTI_Falling_Callback (uint16_t GPIO_Pin){
+	if(GPIO_Pin == GPIO_PIN_7)
+		encoder_irq_counter++;
+
 }
