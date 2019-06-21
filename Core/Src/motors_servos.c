@@ -46,92 +46,63 @@ void S_init(driver_t *driver) {
 void M_move(uint8_t direction, uint32_t data) {
 	uint32_t temp;
 
-	htim1.Instance->CCR1 = 1000;
-	htim1.Instance->CCR2 = 1000;
-	htim1.Instance->CCR3 = 1000;
-	htim1.Instance->CCR4 = 1000;
+	htim1.Instance->CCR1 = 3000;
+	htim1.Instance->CCR2 = 3000;
+	htim1.Instance->CCR3 = 3000;
+	htim1.Instance->CCR4 = 3000;
 
 	encoder_irq_counter = 0;
 
 	switch (direction) {
 	case MOVE_FORWARD:
+		temp = length_to_ticks(data * 10);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
 		_m_move_d(settings->dc_motors_ports, SET);
-//		osDelay(500);
-//		data *= 10;
-		temp = length_to_ticks(data * 10);
+
 		while (encoder_irq_counter <= temp)
 			;
 //		_m_move_smooth();
 		break;
 	case MOVE_REVERSE:
+		temp = length_to_ticks(data * 10);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
 		_m_move_d(settings->dc_motors_ports, RESET);
-//		osDelay(500);
-		temp = length_to_ticks(data * 10);
+
 		while (encoder_irq_counter <= temp)
 			;
 //		_m_move_smooth();
 		break;
 	case MOVE_RIGHT:
+		temp = angle_to_length(data);
+		temp = length_to_ticks(temp);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
 		_m_move_r(settings->dc_motors_ports, RESET);
-		temp = angle_to_length(data);
-		temp = length_to_ticks(temp);
 
 		while (encoder_irq_counter <= temp)
 			;
-//		switch (distance) {
-//		case 45:
-//			osDelay(150);
-//			break;
-//		case 90:
-//			osDelay(300);
-//			break;
-//		case 135:
-//			osDelay(450);
-//			break;
-//		case 180:
-//			osDelay(600);
-//			break;
-//		}
 		break;
 	case MOVE_LEFT:
+		temp = angle_to_length(data);
+		temp = length_to_ticks(temp);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
 		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
 		_m_move_r(settings->dc_motors_ports, SET);
-		temp = angle_to_length(data);
-		temp = length_to_ticks(temp);
+
 		while (encoder_irq_counter <= temp)
 			;
-//		switch (data) {
-//		case 45:
-//			osDelay(150);
-//			break;
-//		case 90:
-//			osDelay(300);
-//			break;
-//		case 135:
-//			osDelay(450);
-//			break;
-//		case 180:
-//			osDelay(600);
-//			break;
-//		}
-//		break;
+		break;
 	case MOVE_STOP:
 	default:
 		_m_move_s(settings->dc_motors_ports);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, RESET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, RESET);
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, RESET);
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, RESET);
 		break;
 	}
 
 	_m_move_s(settings->dc_motors_ports);
-//	M_move(MOVE_STOP,0);
 }
 
 void M_rotate(uint8_t direction, uint16_t angle) {
@@ -210,17 +181,17 @@ static void _m_move_r(uint8_t port, uint8_t direction) {
 	}
 }
 
-static void _m_move_smooth(void) {
-	uint16_t speed_value = 0;
-	while (speed_value < 1000) {
-		htim1.Instance->CCR1 = speed_value;
-		htim1.Instance->CCR2 = speed_value;
-		htim1.Instance->CCR3 = speed_value;
-		htim1.Instance->CCR4 = speed_value;
-		speed_value += 50;
-		osDelay(1000 - speed_value);
-	}
-}
+//static void _m_move_smooth(void) {
+//	uint16_t speed_value = 0;
+//	while (speed_value < 1000) {
+//		htim1.Instance->CCR1 = speed_value;
+//		htim1.Instance->CCR2 = speed_value;
+//		htim1.Instance->CCR3 = speed_value;
+//		htim1.Instance->CCR4 = speed_value;
+//		speed_value += 50;
+//		osDelay(1000 - speed_value);
+//	}
+//}
 
 static void _m_move_s(uint8_t port) {
 	htim1.Instance->CCR1 = 0;
@@ -292,9 +263,7 @@ static uint32_t length_to_ticks(uint32_t length) {
 	return round(length / 103.5);
 }
 
-
-void HAL_GPIO_EXTI_Falling_Callback (uint16_t GPIO_Pin){
-	if(GPIO_Pin == GPIO_PIN_7)
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
+	if (GPIO_Pin == GPIO_PIN_7)
 		encoder_irq_counter++;
-
 }

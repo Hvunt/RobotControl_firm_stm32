@@ -143,7 +143,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		if (i2c_rx_buffer[0] == COMM_INIT/* && old_data_flag == 1*/) {
-
 			i2c_rx_buffer[0] = 0; // disable loop
 
 			uint32_t temp;
