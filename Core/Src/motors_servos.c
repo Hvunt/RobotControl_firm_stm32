@@ -46,90 +46,100 @@ void S_init(driver_t *driver) {
 void M_move(uint8_t direction, uint32_t data) {
 	uint32_t temp;
 
-	htim1.Instance->CCR1 = 3000;
-	htim1.Instance->CCR2 = 3000;
-	htim1.Instance->CCR3 = 3000;
-	htim1.Instance->CCR4 = 3000;
-
-	encoder_irq_counter = 0;
-
-	switch (direction) {
-	case MOVE_FORWARD:
-		temp = length_to_ticks(data * 10);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
-		_m_move_d(settings->dc_motors_ports, SET);
-
-		while (encoder_irq_counter <= temp)
-			;
-//		_m_move_smooth();
-		break;
-	case MOVE_REVERSE:
-		temp = length_to_ticks(data * 10);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
-		_m_move_d(settings->dc_motors_ports, RESET);
-
-		while (encoder_irq_counter <= temp)
-			;
-//		_m_move_smooth();
-		break;
-	case MOVE_RIGHT:
-		temp = angle_to_length(data);
-		temp = length_to_ticks(temp);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
-		_m_move_r(settings->dc_motors_ports, RESET);
-
-		while (encoder_irq_counter <= temp)
-			;
-		break;
-	case MOVE_LEFT:
-		temp = angle_to_length(data);
-		temp = length_to_ticks(temp);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
-		_m_move_r(settings->dc_motors_ports, SET);
-
-		while (encoder_irq_counter <= temp)
-			;
-		break;
-	case MOVE_STOP:
-	default:
-		_m_move_s(settings->dc_motors_ports);
-//		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, RESET);
-//		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, RESET);
-		break;
-	}
-
-	_m_move_s(settings->dc_motors_ports);
-}
-
-void M_rotate(uint8_t direction, uint16_t angle) {
 	htim1.Instance->CCR1 = 1000;
 	htim1.Instance->CCR2 = 1000;
 	htim1.Instance->CCR3 = 1000;
 	htim1.Instance->CCR4 = 1000;
 
+	encoder_irq_counter = 0;
+
+	HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
+	HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
+
 	switch (direction) {
+
+	case MOVE_FORWARD:
+		if (data != 0) {
+			temp = length_to_ticks(data * 10);
+			_m_move_d(settings->dc_motors_ports, SET);
+
+			while (encoder_irq_counter <= temp)
+				HAL_Delay(1);
+			_m_move_s(settings->dc_motors_ports);
+		} else
+			_m_move_d(settings->dc_motors_ports, SET);
+//		_m_move_smooth();
+
+		break;
+
+	case MOVE_REVERSE:
+		if (data != 0) {
+			temp = length_to_ticks(data * 10);
+			_m_move_d(settings->dc_motors_ports, RESET);
+
+			while (encoder_irq_counter <= temp)
+				HAL_Delay(1);
+			_m_move_s(settings->dc_motors_ports);
+		} else
+			_m_move_d(settings->dc_motors_ports, RESET);
+
+//		_m_move_smooth();
+		break;
+
 	case MOVE_RIGHT:
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
+		temp = angle_to_length(data);
+		temp = length_to_ticks(temp);
 		_m_move_r(settings->dc_motors_ports, RESET);
+
+		while (encoder_irq_counter <= temp)
+			HAL_Delay(1);
+		_m_move_s(settings->dc_motors_ports);
 		break;
+
 	case MOVE_LEFT:
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
+		temp = angle_to_length(data);
+		temp = length_to_ticks(temp) * 10;
 		_m_move_r(settings->dc_motors_ports, SET);
+
+		while (encoder_irq_counter <= temp)
+			HAL_Delay(1);
+		_m_move_s(settings->dc_motors_ports);
 		break;
+
 	case MOVE_STOP:
 	default:
 		_m_move_s(settings->dc_motors_ports);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, RESET);
-		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, RESET);
 		break;
 	}
+
+
 }
+
+//void M_rotate(uint8_t direction, uint16_t angle) {
+//	htim1.Instance->CCR1 = 1000;
+//	htim1.Instance->CCR2 = 1000;
+//	htim1.Instance->CCR3 = 1000;
+//	htim1.Instance->CCR4 = 1000;
+//
+//	switch (direction) {
+//	case MOVE_RIGHT:
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
+//		_m_move_r(settings->dc_motors_ports, RESET);
+//		break;
+//	case MOVE_LEFT:
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, SET);
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, SET);
+//		_m_move_r(settings->dc_motors_ports, SET);
+//		break;
+//	case MOVE_STOP:
+//	default:
+//		_m_move_s(settings->dc_motors_ports);
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB1, MOTOR_PIN_STB1, RESET);
+//		HAL_GPIO_WritePin(MOTOR_PORT_STB2, MOTOR_PIN_STB2, RESET);
+//		break;
+//	}
+//}
 
 static void _m_move_d(uint8_t port, uint8_t direction) {
 	if (port & TERMINAL_ONE) {

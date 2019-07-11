@@ -25,8 +25,9 @@ typedef struct {
 	uint16_t servo_ports;
 	//Battery voltage for battery charge monitor
 	uint8_t battery_v;
-	//Type of robot: walked, wheeled, combined
+	//Type of the robot: walked, wheeled, combined
 	uint8_t robot_type; //??
+	//Type of the wheels: Mecanum, Omni, Normal
 
 	//PID regulator. 1 - DC-motors will use PID, 0 - no.
 	uint8_t usePID;

@@ -16,4 +16,7 @@ enum {
     SM_OK = 0x0F
 };
 
+#define VDDA_APPLI			(3300U)
+#define ADC_DELAY_CALIB_ENABLE_CPU_CYCLES  (LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES * 32)
+
 #endif /* INC_UTILS_H_ */
